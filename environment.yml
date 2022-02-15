@@ -1,0 +1,24 @@
+channels:
+  - defaults
+dependencies:
+  - matplotlib
+  - python=3.8
+  - numpy
+  - scipy
+  - ipykernel
+  - pip
+  - pip:
+    - torch
+    - torchvision
+    - pytorch_lightning
+    - torchmetrics
+    - torch_optimizer
+    - einops
+    - albumentations
+    - tifffile
+    - patchify
+    - pyyaml
+    - jsonargparse[signatures]
+    - pandas
+    - h3
+    - shapely
