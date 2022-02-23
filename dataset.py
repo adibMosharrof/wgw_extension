@@ -22,31 +22,39 @@ class ObjectDataModule(pl.LightningDataModule):
     def __init__(
         self,
         cvusa_root:str,
-        batch_size:int=1,
+        batch_size:int=2,
         num_workers:int=2,
-        index:int=0,
-        num_items:int=32
+        start_index:int=0,
+        num_items:int=1000
     ):
         super().__init__()
         self.batch_size = batch_size
         self.cvusa_root = cvusa_root
         self.num_workers = num_workers
-        self.index = index
+        self.start_index = start_index
         self.num_items = num_items
     
     def setup(self, stage=None):
-        start = self.index*self.num_items
-        img_names = list(map(
+        all_img_names = list(map(
             Path,
             open(
                 self.cvusa_root / "flickr_images.txt"
-            ).read().strip().split("\n")[start:start+self.num_items],
+            ).read().strip().split("\n"),
         ))
+        ignored_imgs = [
+            'flickr/39/-84/43612588@N00_4538509275_39.337691_-84.523411.png',
+            'flickr/39/-84/43612588@N00_4539142088_39.337691_-84.523411.png' 
+        ]
+        ignored_imgs = []
+        if self.num_items == None:
+            self.num_items = len(all_img_names)
+        filtered_img_names = [a for a in all_img_names if str(a) not in ignored_imgs]
+        img_names = filtered_img_names[self.start_index:self.start_index+self.num_items]
         self.tfm = transforms.Compose([
-            T.Resize([537,936])
+            # T.Resize([537,936])
+            T.Resize([256,256])
         ])
         self.obj_dataset = ObjectDataset(img_names=img_names, cvusa_root=self.cvusa_root, tfms=self.tfm)
-
 
     def train_dataloader(self):
         return DataLoader(
@@ -55,9 +63,24 @@ class ObjectDataModule(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
             shuffle=False,
-            drop_last=True
+            drop_last=True,
+            collate_fn=self.collate_fn
         )
     
+    def collate_fn(self, batch):
+        len_batch = len(batch)
+        batch = list(filter(lambda x: x is not None, batch))
+        # if len_batch > len(batch):
+        #     db_len = len(self.obj_dataset)
+        #     diff = len_batch - len(batch)
+        #     while diff != 0:
+        #         a = self.obj_dataset[np.random.randint(0, db_len)]
+        #         if a is None:                
+        #             continue
+        #         batch.append(a)
+        #         diff -= 1
+        return torch.utils.data.dataloader.default_collate(batch)
+
     def write_csv(self, results):
         headers = ['image_id','labels']
         with open(f'out/object_detection_{self.num_items}_{self.index}.csv', 'w', encoding='UTF8', newline='') as f:
@@ -74,17 +97,31 @@ class ObjectDataset(Dataset):
         self.score_threshold = 0.8
         self.out_path = Path("out/")
     
+    def _get_lat_long_from_fname(self, fpath: Path):
+        return map(float, fpath.stem.split("_")[2:])
+
     def __getitem__(self, index):
         if index >= len(self) or index <0:
             raise IndexError("index greater than data length")
         img_name = self.img_names[index]
-        img = read_image(str(self.cvusa_root / img_name))
+        try:
+            img = read_image(str(self.cvusa_root / img_name))
+            if img.shape[0] != 3:
+                print(f'3 dimensions not present in image with id {img_name}')
+                return None
+
+        except Exception as e:
+            print(f'could not read image with id {img_name}, error msg {str(e)}')
+            return None
         if self.tfms:
             img = self.tfms(img)
         img = convert_image_dtype(img)
+        lat,lon = self._get_lat_long_from_fname(img_name) 
         row = {
             'image_id': img_name.name,
-            'image': img
+            'image': img,
+            'lat': lat,
+            'lon':lon
         }
         return row
 
