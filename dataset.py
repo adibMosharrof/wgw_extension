@@ -35,23 +35,25 @@ class ObjectDataModule(pl.LightningDataModule):
         self.num_items = num_items
     
     def setup(self, stage=None):
-        all_img_names = list(map(
+        flickr_imgs = list(map(
             Path,
             open(
-                self.cvusa_root / "flickr_images.txt"
+                # self.cvusa_root / "flickr_images.txt"
+                self.cvusa_root / "streetview_images.txt"
             ).read().strip().split("\n"),
         ))
-        ignored_imgs = [
-            'flickr/39/-84/43612588@N00_4538509275_39.337691_-84.523411.png',
-            'flickr/39/-84/43612588@N00_4539142088_39.337691_-84.523411.png' 
-        ]
-        ignored_imgs = []
+        
+        streeview_imgs = list(map(
+            Path,
+            open(
+                self.cvusa_root / "streetview_images.txt"
+            ).read().strip().split("\n"),
+        ))
+        all_img_names = [*streeview_imgs, *flickr_imgs]
         if self.num_items == None:
             self.num_items = len(all_img_names)
-        filtered_img_names = [a for a in all_img_names if str(a) not in ignored_imgs]
-        img_names = filtered_img_names[self.start_index:self.start_index+self.num_items]
+        img_names = all_img_names[self.start_index:self.start_index+self.num_items]
         self.tfm = transforms.Compose([
-            # T.Resize([537,936])
             T.Resize([256,256])
         ])
         self.obj_dataset = ObjectDataset(img_names=img_names, cvusa_root=self.cvusa_root, tfms=self.tfm)
@@ -98,7 +100,10 @@ class ObjectDataset(Dataset):
         self.out_path = Path("out/")
     
     def _get_lat_long_from_fname(self, fpath: Path):
-        return map(float, fpath.stem.split("_")[2:])
+        if "flickr" in str(fpath):
+            return map(float, fpath.stem.split("_")[2:])
+        elif "streetview" in str(fpath):
+            return map(float, fpath.stem.split("_")[:2]) 
 
     def __getitem__(self, index):
         if index >= len(self) or index <0:

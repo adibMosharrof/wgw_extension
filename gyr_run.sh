@@ -1,3 +1,3 @@
 #! /bin/bash
 source activate ./envs
-python run.py -si 0 -bs 5 -w 6
+time python build_dataset.py -si 0 -bs 5 -w 6
