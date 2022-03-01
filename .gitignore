@@ -4,3 +4,5 @@ images/
 out/
 envs/
 __pycache__/
+lightning_logs/
+mlruns/
