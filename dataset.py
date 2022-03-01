@@ -38,18 +38,19 @@ class ObjectDataModule(pl.LightningDataModule):
         flickr_imgs = list(map(
             Path,
             open(
-                # self.cvusa_root / "flickr_images.txt"
-                self.cvusa_root / "streetview_images.txt"
+                self.cvusa_root / "flickr_images.txt"
+                # self.cvusa_root / "streetview_images.txt"
             ).read().strip().split("\n"),
         ))
-        
+
         streeview_imgs = list(map(
             Path,
             open(
                 self.cvusa_root / "streetview_images.txt"
             ).read().strip().split("\n"),
         ))
-        all_img_names = [*streeview_imgs, *flickr_imgs]
+        # all_img_names = [*streeview_imgs, *flickr_imgs]
+        all_img_names = [*flickr_imgs,*streeview_imgs]
         if self.num_items == None:
             self.num_items = len(all_img_names)
         img_names = all_img_names[self.start_index:self.start_index+self.num_items]
@@ -72,15 +73,6 @@ class ObjectDataModule(pl.LightningDataModule):
     def collate_fn(self, batch):
         len_batch = len(batch)
         batch = list(filter(lambda x: x is not None, batch))
-        # if len_batch > len(batch):
-        #     db_len = len(self.obj_dataset)
-        #     diff = len_batch - len(batch)
-        #     while diff != 0:
-        #         a = self.obj_dataset[np.random.randint(0, db_len)]
-        #         if a is None:                
-        #             continue
-        #         batch.append(a)
-        #         diff -= 1
         return torch.utils.data.dataloader.default_collate(batch)
 
     def write_csv(self, results):
@@ -123,7 +115,7 @@ class ObjectDataset(Dataset):
         img = convert_image_dtype(img)
         lat,lon = self._get_lat_long_from_fname(img_name) 
         row = {
-            'image_id': img_name.name,
+            'image_path': str(img_name),
             'image': img,
             'lat': lat,
             'lon':lon

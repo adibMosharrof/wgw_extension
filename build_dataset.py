@@ -72,7 +72,7 @@ if __name__ == "__main__":
 		# output = model(batch['image'])
 		d = batch['image'].to(device)
 		output = model(d)
-		for out, img_id, lat, lon in zip(output, batch['image_id'], batch['lat'], batch['lon']):
+		for out, img_path, lat, lon in zip(output, batch['image_path'], batch['lat'], batch['lon']):
 			try:
 				all_labels = [""]*num_labels
 				mask = out['scores'] > score_threshold
@@ -80,14 +80,14 @@ if __name__ == "__main__":
 				labels = Counter(labels_idx.tolist())
 				for index, count in labels.items():
 					all_labels[index] = count	
-				row = [img_id, float(lat), float(lon)]
+				row = [str(img_path), float(lat), float(lon)]
 				row.extend(all_labels)
 				results.append(row)
 			except Exception as e:
-				print(f'error with image {img_id}, error msg {e.message}, args {e.args}')
+				print(f'error with image {img_path}, error msg {e.message}, args {e.args}')
 				continue
 	name = f'out/object_detection_{args.start_index}_{args.num_items}.csv'
-	headers = ['image_id', 'latitude', 'longitude']
+	headers = ['image_path', 'latitude', 'longitude']
 	headers.extend(label_names)
 	write_csv(headers, results, name)
 	print('completed!')
