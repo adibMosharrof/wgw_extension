@@ -1,0 +1,3 @@
+v5 has pretrained poisson distribution model
+v48 has nlcd with pretrained model
+v41 has nlcd from scratch (did not log too many steps)

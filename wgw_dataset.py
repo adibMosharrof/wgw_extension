@@ -1,4 +1,5 @@
 from __future__ import annotations
+from builtins import FileNotFoundError
 from PIL import Image
 import torch
 from pathlib import Path
@@ -13,6 +14,8 @@ from torch.utils.data import DataLoader
 import torchvision.transforms.functional as F
 from torchvision.io import read_image
 import csv
+import glob
+from torch.utils.data import random_split
 
 class WgwDataModule(pl.LightningDataModule):
     def __init__(
@@ -50,8 +53,9 @@ class WgwDataModule(pl.LightningDataModule):
             self.num_items = len(obj_ds)
         rows = obj_ds[self.start_index:self.start_index+self.num_items]
         valid_size = int(self.valid_pct* self.num_items)
-        train_rows = rows[:-valid_size]
-        valid_rows = rows[-valid_size:]
+        # train_rows = rows[:-valid_size]
+        # valid_rows = rows[-valid_size:]
+        train_rows, valid_rows = random_split(rows, [self.num_items - valid_size, valid_size], generator=torch.Generator().manual_seed(42))
         self.train_wgw_dataset = WgwDataset(data=train_rows, cvusa_root=self.cvusa_root, tfms=self.tfm)
         self.valid_wgw_dataset = WgwDataset(data=valid_rows, cvusa_root=self.cvusa_root, tfms=self.tfm)
 
@@ -63,6 +67,7 @@ class WgwDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=True,
             drop_last=True,
+            collate_fn=self.collate_fn
         )
     def val_dataloader(self):
         return DataLoader(
@@ -72,6 +77,7 @@ class WgwDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=False,
             drop_last=True,
+            collate_fn=self.collate_fn
         )
 
     def _read_csv(self, path:str):
@@ -84,6 +90,10 @@ class WgwDataModule(pl.LightningDataModule):
                 rows.append(r)
         return rows
 
+    def collate_fn(self, batch):
+        len_batch = len(batch)
+        batch = list(filter(lambda x: x is not None, batch))
+        return torch.utils.data.dataloader.default_collate(batch)
 
 class WgwDataset(Dataset):
     def __init__(self, cvusa_root:str, data=None, tfms=None) -> None:
@@ -95,17 +105,32 @@ class WgwDataset(Dataset):
     
     def _get_aerial_img(self, img_path, lat, lon):
         path_split = img_path.split('/')
-        if path_split[0] == "streetview":
-            root = Path(self.cvusa_root) / f'{path_split[0]}_aerial'/self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
-            img_name = Path(path_split[-1])
-            aerial_name = "_".join(img_name.name.split('_')[:-1]) + img_name.suffix
-        elif path_split[0] == "flickr":
-            root = Path(self.cvusa_root) / f'{path_split[0]}_aerial'/self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
-            img_name = Path(path_split[-1])
-            aerial_name = "_".join(img_name.name.split("_")[2:])
-        aerial_path = root / aerial_name
-        # return read_image(str(aerial_path))
-        return np.array(Image.open(str(aerial_path)))
+        # if "streetview" in path_split[-1]:
+        #     root = Path(self.cvusa_root) / path_split[0] /self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
+        #     aerial_name = Path(path_split[-1])
+        #     # aerial_name = "_".join(img_name.name.split('_')[:-1]) + img_name.suffix
+        # elif 'flickr' in path_split[0]:
+        #     root = Path(self.cvusa_root) / path_split[0] / self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
+        #     aerial_name = Path(path_split[-1])
+        # try:
+        # aerial_path = root / aerial_name
+        # except UnboundLocalError as e:
+        #     print(img_path)
+
+        aerial_path = self.cvusa_root / img_path
+        try:
+            img = Image.open(str(aerial_path))
+        except FileNotFoundError as e:
+            print(f'Image Not found {str(aerial_path)}')
+            return None
+            # files = glob.glob(f'{root}/{aerial_path.stem}*')
+            # if not len(files):
+            #     print(f'Image Not found {str(aerial_path)}')
+            #     return None
+            # img = np.array(Image.open(files[0]))
+        if self.tfms:
+            img = self.tfms(img)
+        return img
 
     def _get_labels(self, row):
         labels = [ 0 if r == '' else int(r) for r in row]
@@ -114,8 +139,10 @@ class WgwDataset(Dataset):
     def __getitem__(self, index):
         row = self.data[index]
         aerial_img= self._get_aerial_img(*row[:3])
-        if self.tfms:
-            aerial_img = self.tfms(aerial_img)
+        if aerial_img is None:
+            return None
+
+
         labels = self._get_labels(row[3:])
         result = {
             "aerial_img": aerial_img,
