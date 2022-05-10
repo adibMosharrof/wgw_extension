@@ -20,7 +20,7 @@ from torchvision.transforms.functional import convert_image_dtype
 from torchvision.utils import draw_bounding_boxes
 
 
-class ObjectDataModule(pl.LightningDataModule):
+class CvusaDataModule(pl.LightningDataModule):
     def __init__(
         self,
         cvusa_root:str,
@@ -58,7 +58,7 @@ class ObjectDataModule(pl.LightningDataModule):
         self.tfm = transforms.Compose([
             T.Resize([256,256])
         ])
-        self.obj_dataset = ObjectDataset(img_names=img_names, cvusa_root=self.cvusa_root, tfms=self.tfm)
+        self.obj_dataset = CvusaDataset(img_names=img_names, cvusa_root=self.cvusa_root, tfms=self.tfm)
 
     def train_dataloader(self):
         return DataLoader(
@@ -75,7 +75,7 @@ class ObjectDataModule(pl.LightningDataModule):
         batch = list(filter(lambda x: x is not None, batch))
         return torch.utils.data.dataloader.default_collate(batch)
 
-class ObjectDataset(Dataset):
+class CvusaDataset(Dataset):
     def __init__(self, cvusa_root:str, img_names, tfms=None) -> None:
         super().__init__()
         self.img_names = img_names

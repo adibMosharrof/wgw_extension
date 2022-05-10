@@ -1,4 +1,4 @@
-from dataset import ObjectDataModule, ObjectDataset
+from dataset import CvusaDataModule, CvusaDataset
 import pytorch_lightning as pl
 from pathlib import Path
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
@@ -10,6 +10,14 @@ import utils
 from tqdm import tqdm
 
 class BuildObjectDataset():
+    '''
+        Create object distribution dataset. Can be run independently or called from object distribution module.
+        Reads in cvusa images ground level images
+        Loads an object detection model from pytorch and predicts the number of objects in the image
+        Dataset saved as a csv file
+        Csv headers
+            aerial path, latitude, longitude, 50 MS COCO classes frequency distribution
+    '''
     def __init__(self, data_root="/u/eag-d1/data/crossview/cvusa/", num_items=None, batch_size=5, workers=8, start_index=0, gpu=0, zoom="18") -> None:
         self.data_root = data_root
         self.num_items = num_items
@@ -37,7 +45,7 @@ class BuildObjectDataset():
         'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
         ]
 
-        dm = ObjectDataModule(
+        dm = CvusaDataModule(
             cvusa_root = Path(self.data_root),
             start_index=self.start_index,
             num_items=self.num_items,
