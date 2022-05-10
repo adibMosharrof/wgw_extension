@@ -35,10 +35,9 @@ def get_args():
         "-ls", "--log_step", type=int, default=1000, help="Log Step"
     )
     parser.add_argument(
-        "-ds", "--dataset", type=str, default="out/object_detection_0_100.csv", help="CSV Dataset Path"
+        "-odsr", "--object_dataset_root", type=str, default="out/", help="Object Dataset Root"
     )
     parser.add_argument(
-        # "-dr", "--data_root", type=str, default="/u/eag-d1/data/crossview/cvusa/", help="CSV Dataset Path"
         "-dr", "--data_root", type=str, default="/localdisk1/data/cvusa_eag", help="CSV Dataset Path"
     )
     return parser.parse_args()
@@ -52,34 +51,25 @@ def train():
         num_items=args.num_items,
         num_workers=args.workers,
         batch_size=args.batch_size,
-        obj_dataset_csv=args.dataset
+        obj_dataset_root=args.object_dataset_root
     )
+    wgw_dm.prepare_data()
     wgw_dm.setup()
 
     model = WgwModel()
-    # model = model.to(device)
-    # model = model.eval()
-    results = []
-
-    # trainer = pl.Trainer(max_epochs=args.epochs, precision=16, gpus=[args.gpu])
     if args.gpu == -1:
         gpu = -1
     else:
         gpu = [args.gpu]
 
-    # mlf_logger = MLFlowLogger()
     trainer = pl.Trainer(
         max_epochs=args.epochs, 
         precision=16, 
         gpus=gpu,
-        # strategy='ddp',
         plugins=DDPPlugin(find_unused_parameters=False),
         log_every_n_steps=args.log_step
         )
-    mlflow.pytorch.autolog()
-    with mlflow.start_run() as run:
-        trainer.fit(model, wgw_dm)
-    # trainer.fit(model, wgw_dm)
+    trainer.fit(model, wgw_dm)
 
 if __name__ == "__main__":
     train()
