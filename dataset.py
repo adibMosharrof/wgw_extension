@@ -1,22 +1,24 @@
 from __future__ import annotations
-from PIL import Image
-import torch
-from pathlib import Path
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset
-from torchvision import transforms
-import torchvision.transforms as T
-import os
-import pytorch_lightning as pl
-from torchvision.models.detection import fasterrcnn_resnet50_fpn
-from torch.utils.data import DataLoader
-from torchvision.transforms.functional import convert_image_dtype
-import torchvision.transforms.functional as F
-from torchvision.utils import draw_bounding_boxes
-from collections import Counter
-from torchvision.io import read_image
+
 import csv
+import os
+from collections import Counter
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pytorch_lightning as pl
+import torch
+import torchvision.transforms as T
+import torchvision.transforms.functional as F
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+from torchvision.io import read_image
+from torchvision.models.detection import fasterrcnn_resnet50_fpn
+from torchvision.transforms.functional import convert_image_dtype
+from torchvision.utils import draw_bounding_boxes
+
 
 class ObjectDataModule(pl.LightningDataModule):
     def __init__(
@@ -49,7 +51,6 @@ class ObjectDataModule(pl.LightningDataModule):
                 self.cvusa_root / "streetview_images.txt"
             ).read().strip().split("\n"),
         ))
-        # all_img_names = [*streeview_imgs, *flickr_imgs]
         all_img_names = [*flickr_imgs,*streeview_imgs]
         if self.num_items == None:
             self.num_items = len(all_img_names)
@@ -71,16 +72,8 @@ class ObjectDataModule(pl.LightningDataModule):
         )
     
     def collate_fn(self, batch):
-        len_batch = len(batch)
         batch = list(filter(lambda x: x is not None, batch))
         return torch.utils.data.dataloader.default_collate(batch)
-
-    def write_csv(self, results):
-        headers = ['image_id','labels']
-        with open(f'out/object_detection_{self.num_items}_{self.index}.csv', 'w', encoding='UTF8', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=headers)
-            writer.writeheader()
-            writer.writerows(results)
 
 class ObjectDataset(Dataset):
     def __init__(self, cvusa_root:str, img_names, tfms=None) -> None:

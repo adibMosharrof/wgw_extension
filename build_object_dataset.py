@@ -10,14 +10,11 @@ from argparse import ArgumentParser
 import utils
 from tqdm import tqdm
 
-def write_csv(headers, results, file_name):
-        with open(file_name, 'w', encoding='UTF8', newline='') as f:
-            csvwriter = csv.writer(f) 
-            csvwriter.writerow(headers) 
-            csvwriter.writerows(results)
-
 def get_args():
     parser = ArgumentParser()
+    parser.add_argument(
+        "-dr", "--data_root", type=str, default="/u/eag-d1/data/crossview/cvusa/", help="Data size"
+    )
     parser.add_argument(
         "-ni", "--num_items", type=int, default=None, help="Data size"
     )
@@ -38,7 +35,7 @@ def get_args():
     )
     return parser.parse_args()
 
-if __name__ == "__main__":
+def build():
     args = get_args()
     print(args)
     device_name = f'cuda:{args.gpu}'
@@ -59,7 +56,7 @@ if __name__ == "__main__":
     ]
 
     dm = ObjectDataModule(
-        cvusa_root = Path("/u/eag-d1/data/crossview/cvusa/"),
+        cvusa_root = Path(args.data_root),
         start_index=args.start_index,
         num_items=args.num_items,
         num_workers=args.workers,
@@ -73,8 +70,6 @@ if __name__ == "__main__":
     model = model.eval()
     results = []
     for batch in tqdm(dm.train_dataloader()):
-        
-        # output = model(batch['image'])
         d = batch['image'].to(device)
         output = model(d)
         for out, img_path, lat, lon in zip(output, batch['image_path'], batch['lat'], batch['lon']):
@@ -95,8 +90,10 @@ if __name__ == "__main__":
     name = f'out/object_detection_{args.start_index}_{args.num_items}.csv'
     headers = ['aerial_path', 'latitude', 'longitude']
     headers.extend(label_names)
-    write_csv(headers, results, name)
+    utils.write_csv(headers, results, name)
     print('completed!')
 
+if __name__ == "__main__":
+    build()
 
     
