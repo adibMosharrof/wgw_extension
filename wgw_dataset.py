@@ -5,23 +5,24 @@ import torch
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.utils.data import Dataset
 from torchvision import transforms
 import torchvision.transforms as T
 import os
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms.functional as F
 from torchvision.io import read_image
 import csv
 import glob
 from torch.utils.data import random_split
+import utils
+from build_object_dataset import BuildObjectDataset
 
 class WgwDataModule(pl.LightningDataModule):
     def __init__(
         self,
         cvusa_root:str,
-        obj_dataset_csv:str,
+        obj_dataset_root:str,
         batch_size:int=2,
         num_workers:int=0,
         start_index:int=0,
@@ -31,15 +32,21 @@ class WgwDataModule(pl.LightningDataModule):
     ):
         super().__init__()
         self.batch_size = batch_size
-        self.obj_dataset_csv = obj_dataset_csv
+        self.obj_dataset_root = obj_dataset_root
         self.cvusa_root = cvusa_root
         self.num_workers = num_workers
         self.start_index = start_index
         self.num_items = num_items
         self.valid_pct = valid_pct
+        self.obj_csv_path = Path(self.obj_dataset_root) / f"object_dataset_{self.start_index}_{self.num_items}.csv"
     
+    def prepare_data(self):
+        if not self.obj_csv_path.is_file():
+            bod = BuildObjectDataset(num_items=self.num_items, start_index=self.start_index)
+            bod.build() 
+
     def setup(self, stage=None):
-        obj_ds = self._read_csv(self.obj_dataset_csv)
+        obj_ds = utils.read_csv(self.obj_csv_path)
         
         self.tfm = transforms.Compose([
             T.ToTensor(),
@@ -53,8 +60,6 @@ class WgwDataModule(pl.LightningDataModule):
             self.num_items = len(obj_ds)
         rows = obj_ds[self.start_index:self.start_index+self.num_items]
         valid_size = int(self.valid_pct* self.num_items)
-        # train_rows = rows[:-valid_size]
-        # valid_rows = rows[-valid_size:]
         train_rows, valid_rows = random_split(rows, [self.num_items - valid_size, valid_size], generator=torch.Generator().manual_seed(42))
         self.train_wgw_dataset = WgwDataset(data=train_rows, cvusa_root=self.cvusa_root, tfms=self.tfm)
         self.valid_wgw_dataset = WgwDataset(data=valid_rows, cvusa_root=self.cvusa_root, tfms=self.tfm)
@@ -105,29 +110,12 @@ class WgwDataset(Dataset):
     
     def _get_aerial_img(self, img_path, lat, lon):
         path_split = img_path.split('/')
-        # if "streetview" in path_split[-1]:
-        #     root = Path(self.cvusa_root) / path_split[0] /self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
-        #     aerial_name = Path(path_split[-1])
-        #     # aerial_name = "_".join(img_name.name.split('_')[:-1]) + img_name.suffix
-        # elif 'flickr' in path_split[0]:
-        #     root = Path(self.cvusa_root) / path_split[0] / self.zoom/ str(int(float(lat))) / str(int(float(lon))) 
-        #     aerial_name = Path(path_split[-1])
-        # try:
-        # aerial_path = root / aerial_name
-        # except UnboundLocalError as e:
-        #     print(img_path)
-
         aerial_path = self.cvusa_root / img_path
         try:
             img = Image.open(str(aerial_path))
         except FileNotFoundError as e:
             print(f'Image Not found {str(aerial_path)}')
             return None
-            # files = glob.glob(f'{root}/{aerial_path.stem}*')
-            # if not len(files):
-            #     print(f'Image Not found {str(aerial_path)}')
-            #     return None
-            # img = np.array(Image.open(files[0]))
         if self.tfms:
             img = self.tfms(img)
         return img
