@@ -1,6 +1,5 @@
 from __future__ import annotations
 from builtins import FileNotFoundError
-from typing import List
 from PIL import Image
 import torch
 from pathlib import Path
@@ -9,11 +8,9 @@ from torchvision import transforms
 import torchvision.transforms as T
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Dataset
-import torchvision.transforms.functional as F
 from torch.utils.data import random_split
 import utils
 from build_object_dataset import BuildObjectDataset
-from dataclasses import dataclass, field
 
 
 class ObjectDistributionDataModule(pl.LightningDataModule):
@@ -135,9 +132,3 @@ class ObjectDistributionDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
-
-
-@dataclass
-class ObjectDistribution:
-    aerial_img: Image.Image
-    label_counts: List[int]

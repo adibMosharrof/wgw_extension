@@ -2,21 +2,14 @@ from __future__ import annotations
 from PIL import Image
 import torch
 from pathlib import Path
-import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 from torchvision import transforms
 import torchvision.transforms as T
-import os
 import pytorch_lightning as pl
-from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torch.utils.data import DataLoader
 from torchvision.transforms.functional import convert_image_dtype
 import torchvision.transforms.functional as F
-from torchvision.utils import draw_bounding_boxes
-from collections import Counter
 from torchvision.io import read_image
-import csv
 import utils
 import json
 from torch.utils.data import random_split

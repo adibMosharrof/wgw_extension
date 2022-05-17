@@ -1,13 +1,9 @@
 from pathlib import Path
-import csv
 from argparse import ArgumentParser
-import os
 import json
-from re import L
 from build_object_dataset import BuildObjectDataset
 from pyproj import CRS
 import rasterio
-import numpy as np
 from pyproj import Transformer
 import utils
 from tqdm import tqdm
@@ -116,16 +112,6 @@ class BuildNlcdDataset:
         lat = params[0].value
         long = params[1].value
         return {"lat": lat, "long": long}
-
-    def get_patches_csv(self, path: Path):
-        patches_csv = []
-        if not path.is_file():
-            raise FileNotFoundError(f"patches csv file not found at location {path}")
-        with open(path, "r") as f:
-            reader = csv.reader(f)
-            for r in reader:
-                patches_csv.append(r[0])
-        return patches_csv
 
 
 def get_args():
