@@ -101,7 +101,7 @@ class NlcdPretrainedModel(NlcdBaselineModel):
         super().__init__()
         self.save_hyperparameters()
         checkpoint = torch.load(checkpoint_path)
-        wgw_model = ObjectDistributionModel(num_classes=num_classes)
-        wgw_model.load_state_dict(checkpoint["state_dict"])
-        self.aerial_model = wgw_model.aerial_model
+        obj_dist_model = ObjectDistributionModel(num_classes=num_classes)
+        obj_dist_model.load_state_dict(checkpoint["state_dict"])
+        self.aerial_model = obj_dist_model.aerial_model
         self.aerial_model.fc = nn.Linear(512, num_classes)
