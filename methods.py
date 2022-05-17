@@ -7,7 +7,7 @@ from torch.distributions.poisson import Poisson
 
 CUDA_LAUNCH_BLOCKING=1
 
-class WgwModel(pl.LightningModule):
+class ObjectDistributionModel(pl.LightningModule):
 
     def __init__(self, num_classes=91):
         super().__init__()

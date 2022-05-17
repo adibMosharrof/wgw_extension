@@ -1,15 +1,9 @@
 import pytorch_lightning as pl
 from pathlib import Path
-import csv
-import torch
 from argparse import ArgumentParser
-from methods import WgwModel
-from wgw_dataset import WgwDataModule
-import tqdm.autonotebook as tqdm
-from torch.distributions.poisson import Poisson
-import mlflow.pytorch
+from methods import ObjectDistributionModel
+from object_distribution_dataset import ObjectDistributionDataModule
 from pytorch_lightning.plugins import DDPPlugin
-from pytorch_lightning.loggers import MLFlowLogger
 
 def get_args():
     parser = ArgumentParser()
@@ -45,7 +39,7 @@ def get_args():
 def train():
     args = get_args()
     print(args)
-    wgw_dm = WgwDataModule(
+    obj_dist_dm = ObjectDistributionDataModule(
         cvusa_root = Path(args.data_root),
         start_index=args.start_index,
         num_items=args.num_items,
@@ -53,10 +47,10 @@ def train():
         batch_size=args.batch_size,
         obj_dataset_root=args.object_dataset_root
     )
-    wgw_dm.prepare_data()
-    wgw_dm.setup()
+    obj_dist_dm.prepare_data()
+    obj_dist_dm.setup()
 
-    model = WgwModel()
+    model = ObjectDistributionModel()
     if args.gpu == -1:
         gpu = -1
     else:
@@ -69,7 +63,7 @@ def train():
         plugins=DDPPlugin(find_unused_parameters=False),
         log_every_n_steps=args.log_step
         )
-    trainer.fit(model, wgw_dm)
+    trainer.fit(model, obj_dist_dm)
 
 if __name__ == "__main__":
     train()
