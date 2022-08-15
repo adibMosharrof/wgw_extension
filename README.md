@@ -1,5 +1,3 @@
-Summary of Project Contribution
-
 ## Resources
 The code and overleaf document is at the link below
 
@@ -8,6 +6,23 @@ The code and overleaf document is at the link below
 |Code |https://github.com/adibMosharrof/wgw_extension |
 |Overleaf|https://www.overleaf.com/project/62222cc5221483c56962e98f|
 
+## CodeBase
+The code has the following parts
+- Predict Object Distribution
+- Predict Nlcd Coarse Labels
+
+### Dataset
+CVUSA flickr and streetview images have been used in this project.
+
+### Environment
+The project has been written in python $3.9.5$  and the python environment can be created using the environment.yml file.
+
+### Sh files
+There are some .sh files in the project which can be used to run some of the modules in the project. 
+- build_object_dataset.sh
+- obj_dist.sh
+- build_nlcd_dataset.sh
+- nlcd.sh
 
 ## Object distribution dataset
 Using off the shelf object detection library from pytorch, I created an object distribution dataset on the CVUSA dataset. The dataset is a csv file which has the following columns
