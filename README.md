@@ -54,15 +54,15 @@ From the graphs below, we can observe that the pretraining helps in classifying 
 ### Train
 
 #### Train accuracy
-![[train_acc.svg]]
+![Train Accuracy](images_readme/train_acc.svg)
 
 #### Train Loss
-![[assets/prog_april12/train_loss.svg]]
+![Train Loss](images_readme/train_loss.svg)
 
 ### Validation
 #### Val accuracy
-![[val_acc.svg]]
+![Val Accuracy](images_readme/val_acc.svg)
 
 #### Val Loss
-![[val_loss.svg]]
+![Val Loss](images_readme/val_loss.svg)
 
